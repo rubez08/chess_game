@@ -6,6 +6,8 @@ from pieces.queen import Queen
 from pieces.king import King
 from position import Position
 from square import Square
+from position import Position
+
 from starting_positions import starting_piece_positions
 class Board:
     files = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h')
@@ -49,3 +51,15 @@ class Board:
                 else:
                     print(square.piece.name[0], end=' ')
             print()
+
+    def movePiece(self, start, end):
+        start_square = self.rows[8 - start.rank][self.files.index(start.file)]
+        piece_to_move = start_square.piece
+        if piece_to_move == None:
+            raise ValueError("No piece at start position")
+        end_square = self.rows[8 - end.rank][self.files.index(end.file)]
+        if end_square.piece != None:
+            raise ValueError("End position is occupied")
+        end_square.piece = piece_to_move
+        start_square.piece = None
+        piece_to_move.move(end)

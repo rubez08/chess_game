@@ -1,4 +1,52 @@
 from board import Board
+from position import Position
+import pygame
+import sys
 
+# board = Board()
+# board.printBoard()
+# board.movePiece(Position("e", 2), Position("e", 4))
+# print()
+# board.printBoard()
+
+# Main game loop
+pygame.init()
+
+WIDTH, HEIGHT = 800, 800  # Window size
+SQ_SIZE = WIDTH // 8  # Size of each square
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+LIGHT_SQUARE_COLOR = (238, 238, 210)  # Light square color
+DARK_SQUARE_COLOR = (118, 150, 86)  # Dark square color
+
+# Create the display window
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Chessboard")
 board = Board()
-board.printBoard()
+
+def draw_board():
+    for rank in range(8):
+        for file in range(8):
+            color = LIGHT_SQUARE_COLOR if (rank + file) % 2 == 0 else DARK_SQUARE_COLOR
+            pygame.draw.rect(screen, color, (file * SQ_SIZE, rank * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+            
+            # Draw pieces if any
+            piece = board.rows[rank][file].piece
+            if piece:
+                screen.blit(piece.image, (file * SQ_SIZE, rank * SQ_SIZE))
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    
+    # Draw the chessboard
+    draw_board()
+
+    # Update the display
+    pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
+sys.exit()
