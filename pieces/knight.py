@@ -13,3 +13,11 @@ class Knight(Piece):
                 self.image = pygame.image.load("pieces/knight_black.png")
             case _:
                 raise ValueError("Invalid color")
+    
+    def move(self, new_position):
+        if not self.is_valid_move(new_position):
+            raise ValueError("Invalid Move")
+        self.position = new_position
+
+    def is_valid_move(self, new_position):
+        return True

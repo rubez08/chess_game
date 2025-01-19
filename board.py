@@ -7,10 +7,10 @@ from pieces.king import King
 from position import Position
 from square import Square
 from position import Position
+from files import files
 
 from starting_positions import starting_piece_positions
 class Board:
-    files = ('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h')
     rows = []
     index_to_squareName = {}
     def __init__(self):
@@ -20,7 +20,7 @@ class Board:
     def buildBoard(self):
         for i in range(8, 0, -1):
             row = []
-            for file in self.files:
+            for file in files:
                 position = Position(file, i)
                 row.append(Square(position))
             self.rows.append(row)
@@ -29,7 +29,7 @@ class Board:
         for position, piece in starting_piece_positions.items():
             file = position.file
             rank = position.rank
-            square = self.rows[8 - rank][self.files.index(file)]
+            square = self.rows[8 - rank][files.index(file)]
             if piece[0] == "Pawn":
                 square.piece = Pawn(piece[1], position)
             elif piece[0] == "Rook":
@@ -53,13 +53,17 @@ class Board:
             print()
 
     def movePiece(self, start, end):
-        start_square = self.rows[8 - start.rank][self.files.index(start.file)]
+        start_square = self.rows[8 - start.rank][files.index(start.file)]
         piece_to_move = start_square.piece
-        if piece_to_move == None:
+        if piece_to_move is None:
             raise ValueError("No piece at start position")
-        end_square = self.rows[8 - end.rank][self.files.index(end.file)]
-        if end_square.piece != None:
+        end_square = self.rows[8 - end.rank][files.index(end.file)]
+        if end_square.piece is not None:
             raise ValueError("End position is occupied")
+        try:
+            piece_to_move.move(end)
+        except ValueError:
+            print("Invalid move")
+            return
         end_square.piece = piece_to_move
         start_square.piece = None
-        piece_to_move.move(end)

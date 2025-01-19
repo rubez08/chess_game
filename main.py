@@ -2,6 +2,7 @@ from board import Board
 from position import Position
 import pygame
 import sys
+from files import files
 
 # board = Board()
 # board.printBoard()
@@ -40,6 +41,28 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            x, y = event.pos
+            file = x // SQ_SIZE
+            rank = y // SQ_SIZE
+            piece = board.rows[rank][file].piece
+            if piece:
+                dragging_piece = piece
+                dragging_piece_pos = (rank, file)
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if dragging_piece:
+                x, y = event.pos
+                new_file = x // SQ_SIZE
+                new_rank = y // SQ_SIZE
+                start_pos = Position(files[dragging_piece_pos[1]], 8 - dragging_piece_pos[0])
+                end_pos = Position(files[new_file], 8 - new_rank)
+                try:
+                    board.movePiece(start_pos, end_pos)
+                except ValueError as e:
+                    print(e)
+                dragging_piece = None
+                dragging_piece_pos = None
+
     
     # Draw the chessboard
     draw_board()
