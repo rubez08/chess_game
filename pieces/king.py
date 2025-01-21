@@ -17,7 +17,7 @@ class King(Piece):
         self.hasMoved = False
         self.isInCheck = False
 
-    def move(self, new_position):
+    def move(self, new_position, board):
         if not self.is_valid_move(new_position):
             raise ValueError("Invalid Move")
         self.position = new_position

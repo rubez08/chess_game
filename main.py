@@ -57,7 +57,7 @@ while running:
                 start_pos = Position(files[dragging_piece_pos[1]], 8 - dragging_piece_pos[0])
                 end_pos = Position(files[new_file], 8 - new_rank)
                 try:
-                    board.movePiece(start_pos, end_pos)
+                    board.move_piece(start_pos, end_pos)
                 except ValueError as e:
                     print(e)
                 dragging_piece = None

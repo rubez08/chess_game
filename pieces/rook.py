@@ -14,11 +14,16 @@ class Rook(Piece):
             case _:
                 raise ValueError("Invalid color")
     
-    def move(self, new_position):
+    def move(self, new_position, board):
         if not self.is_valid_move(new_position):
             raise ValueError("Invalid Move")
         self.position = new_position
         self.hasMoved = True
     
     def is_valid_move(self, new_position):
-        return True
+        if self.position.rank == new_position.rank:
+            return True
+        elif self.position.file == new_position.file:
+            return True
+        else:
+            return False

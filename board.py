@@ -14,10 +14,10 @@ class Board:
     rows = []
     index_to_squareName = {}
     def __init__(self):
-        self.buildBoard()
-        self.placePieces()
+        self.build_board()
+        self.place_pieces()
 
-    def buildBoard(self):
+    def build_board(self):
         for i in range(8, 0, -1):
             row = []
             for file in files:
@@ -25,7 +25,7 @@ class Board:
                 row.append(Square(position))
             self.rows.append(row)
 
-    def placePieces(self):
+    def place_pieces(self):
         for position, piece in starting_piece_positions.items():
             file = position.file
             rank = position.rank
@@ -43,7 +43,7 @@ class Board:
             elif piece[0] == "King":
                 square.piece = King(piece[1], position)
 
-    def printBoard(self):
+    def print_board(self):
         for row in self.rows:
             for square in row:
                 if (square.piece == None):
@@ -52,7 +52,7 @@ class Board:
                     print(square.piece.name[0], end=' ')
             print()
 
-    def movePiece(self, start, end):
+    def move_piece(self, start, end):
         start_square = self.rows[8 - start.rank][files.index(start.file)]
         piece_to_move = start_square.piece
         if piece_to_move is None:
@@ -61,9 +61,12 @@ class Board:
         if end_square.piece is not None:
             raise ValueError("End position is occupied")
         try:
-            piece_to_move.move(end)
-        except ValueError:
-            print("Invalid move")
+            piece_to_move.move(end, self)
+        except ValueError as e:
+            print(e)
             return
         end_square.piece = piece_to_move
         start_square.piece = None
+    
+    def get_piece_at_position(self, position):
+        return self.rows[8 - position.rank][files.index(position.file)].piece
