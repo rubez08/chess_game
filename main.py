@@ -36,6 +36,9 @@ def draw_board():
             if piece:
                 screen.blit(piece.image, (file * SQ_SIZE, rank * SQ_SIZE))
 
+dragging_piece = None
+dragging_piece_pos = None
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -49,6 +52,7 @@ while running:
             if piece:
                 dragging_piece = piece
                 dragging_piece_pos = (rank, file)
+                board.rows[rank][file].piece = None
         elif event.type == pygame.MOUSEBUTTONUP:
             if dragging_piece:
                 x, y = event.pos
@@ -57,18 +61,26 @@ while running:
                 start_pos = Position(files[dragging_piece_pos[1]], 8 - dragging_piece_pos[0])
                 end_pos = Position(files[new_file], 8 - new_rank)
                 try:
-                    board.move_piece(start_pos, end_pos)
+                    board.move_piece(start_pos, end_pos, dragging_piece)
                 except ValueError as e:
+                    board.rows[dragging_piece_pos[0]][dragging_piece_pos[1]].piece = dragging_piece
                     print(e)
                 dragging_piece = None
                 dragging_piece_pos = None
-
+                draw_board()
+                pygame.display.flip()
+        elif event.type == pygame.MOUSEMOTION:
+            if dragging_piece:
+                x, y = event.pos
+                screen.fill(WHITE)
+                draw_board()
+                screen.blit(dragging_piece.image, (x - SQ_SIZE // 2, y - SQ_SIZE // 2))
+                pygame.display.flip()
     
-    # Draw the chessboard
-    draw_board()
+    if not dragging_piece:
+        draw_board()
+        pygame.display.flip()
 
-    # Update the display
-    pygame.display.flip()
 
 # Quit Pygame
 pygame.quit()

@@ -15,6 +15,7 @@ class Rook(Piece):
                 self.image = pygame.image.load("pieces/rook_black.png")
             case _:
                 raise ValueError("Invalid color")
+        self.has_moved = False
     
     def move(self, new_position, board):
         if not self.is_valid_move(new_position):
@@ -22,7 +23,7 @@ class Rook(Piece):
         if self.is_obstructed(new_position, board):
             raise ValueError("There is a piece in the way")
         self.position = new_position
-        self.hasMoved = True
+        self.has_moved = True
     
     def is_valid_move(self, new_position):
         if self.position.rank == new_position.rank:

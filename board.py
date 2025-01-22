@@ -52,21 +52,29 @@ class Board:
                     print(square.piece.name[0], end=' ')
             print()
 
-    def move_piece(self, start, end):
+    def move_piece(self, start, end, piece_to_move=None):
         start_square = self.rows[8 - start.rank][files.index(start.file)]
-        piece_to_move = start_square.piece
         if piece_to_move is None:
             raise ValueError("No piece at start position")
         end_square = self.rows[8 - end.rank][files.index(end.file)]
         if end_square.piece is not None:
-            raise ValueError("End position is occupied")
+            if end_square.piece.color == piece_to_move.color:
+                raise ValueError("End position is occupied by a piece of the same color")
         try:
-            piece_to_move.move(end, self)
+            result = piece_to_move.move(end, self)
+            if result is None:
+                second_piece, second_piece_start = None, None
+            else:
+                second_piece, second_piece_start = result
         except ValueError as e:
-            print(e)
-            return
+            raise ValueError(e)
         end_square.piece = piece_to_move
         start_square.piece = None
+        if second_piece:
+            second_start_square = self.rows[8 - second_piece_start.rank][files.index(second_piece_start.file)]
+            second_end_square = self.rows[8 - second_piece.position.rank][files.index(second_piece.position.file)]
+            second_end_square.piece = second_piece
+            second_start_square.piece = None
     
     def get_piece_at_position(self, position):
         return self.rows[8 - position.rank][files.index(position.file)].piece
