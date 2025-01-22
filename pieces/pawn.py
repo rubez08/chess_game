@@ -1,6 +1,7 @@
 from pieces.piece import Piece
 from colors import Color
 import pygame
+from position import Position
 
 class Pawn(Piece):
     name = "Pawn"
@@ -18,6 +19,8 @@ class Pawn(Piece):
     def move(self, new_position, board):
         if not self.is_valid_move(new_position):
             raise ValueError(f"Cannot move from {self.position} to {new_position}")
+        if self.is_obstructed(new_position, board):
+            raise ValueError(f"There is a piece in the way")
         self.position = new_position
     
     def is_valid_move(self, new_position):
@@ -37,3 +40,12 @@ class Pawn(Piece):
                 return True
             else:
                 return False
+    
+    def is_obstructed(self, new_position, board):
+        if self.color == Color.WHITE:
+            if board.get_piece_at_position(Position(self.position.file, self.position.rank + 1)) is not None:
+                return True
+        else:
+            if board.get_piece_at_position(Position(self.position.file, self.position.rank - 1)) is not None:
+                return True
+        return False

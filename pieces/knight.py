@@ -21,9 +21,9 @@ class Knight(Piece):
         self.position = new_position
 
     def is_valid_move(self, new_position):
-        if (abs(self.position.rank - new_position.rank) == 2 and abs(files.index(self.position.file) - files.index(new_position.file))):
-            return True
-        elif (abs(self.position.rank - new_position.rank) == 1 and abs(files.index(self.position.file) - files.index(new_position.file))):
+        rank_movement = self.position.rank - new_position.rank
+        file_movement = files.index(self.position.file) - files.index(new_position.file)
+        if ((abs(rank_movement) == 2 and abs(file_movement) == 1) or (abs(rank_movement) == 1 and abs(file_movement) == 2)):
             return True
         else:
             return False

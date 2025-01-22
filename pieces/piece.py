@@ -9,5 +9,5 @@ class Piece:
     def is_valid_move(self, newPosition):
         return True
     
-    def is_obstructed(self, newPosition):
+    def is_obstructed(self, newPosition, board):
         return False
