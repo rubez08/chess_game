@@ -4,7 +4,7 @@ import sys
 from piece import Piece
 from translate_board_notations import rank_file_numeric_to_array_pos
 from move import Move
-
+from move_rules import valid_moves
 # Main game loop
 pygame.init()
 
@@ -19,6 +19,7 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 LIGHT_SQUARE_COLOR = (238, 238, 210)  # Light square color
 DARK_SQUARE_COLOR = (118, 150, 86)  # Dark square color
+BLACK_CIRCLE_COLOR = (0, 0, 0) # Black circle color
 
 PIECE_IMAGES = {
     (Piece.BLACK | Piece.PAWN): load_and_resize_image("images/bP.png", (SQ_SIZE, SQ_SIZE)),
@@ -40,6 +41,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chessboard")
 board = Board()
 board.set_up_game_start()
+valid_moves_list = []
 
 def draw_board():
     for rank in range(8):
@@ -86,13 +88,16 @@ while running:
                 new_file = x // SQ_SIZE
                 new_rank = y // SQ_SIZE
                 end_array_pos = rank_file_numeric_to_array_pos(new_rank, new_file)
-                move = Move(board.board, start_array_pos, end_array_pos, piece)
-                move.move()
-
+                if end_array_pos in valid_moves(piece, start_array_pos, board.board):
+                    move = Move(board.board, start_array_pos, end_array_pos, piece)
+                    move.move()
+                else: # If the move is invalid, put the piece back
+                    board.board[start_array_pos] = piece
                 dragging_piece = None
                 dragging_piece_pos = None
                 draw_board()
                 pygame.display.flip()
+
         elif event.type == pygame.MOUSEMOTION:
             if dragging_piece:                
                 x, y = event.pos
@@ -119,6 +124,15 @@ while running:
     # Draw the dragging piece if exists
     if dragging_piece:
         screen.blit(PIECE_IMAGES[dragging_piece], (dragging_piece_pos[0] - SQ_SIZE // 2, dragging_piece_pos[1] - SQ_SIZE // 2))
+        valid_moves_list = valid_moves(piece, start_array_pos, board.board)
+        ## Overlay a light pink color on the valid move squares
+        for valid_move in valid_moves_list:
+            rank, file = divmod(valid_move, 8)
+            center = (file * SQ_SIZE + SQ_SIZE // 2, rank * SQ_SIZE + SQ_SIZE // 2)
+            radius = SQ_SIZE // 2
+            border_width = 3
+            pygame.draw.circle(screen, BLACK_CIRCLE_COLOR, center, radius, border_width)
+
     
     pygame.display.flip()
 

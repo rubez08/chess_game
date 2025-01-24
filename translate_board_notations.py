@@ -40,3 +40,8 @@ def fen_notation_to_board(fen):
 
 def rank_file_numeric_to_array_pos(rank, file):
     return rank * 8 + file
+
+def array_pos_to_rank_file_numeric(index):
+    rank = index // 8
+    file = index % 8
+    return (rank, file)

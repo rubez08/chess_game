@@ -15,3 +15,5 @@ class Move:
         else:
             self.board[self.end] = self.piece_moved
             self.board[self.start] = Piece.EMPTY
+
+            
