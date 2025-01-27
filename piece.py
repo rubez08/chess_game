@@ -22,16 +22,19 @@ class Piece(IntFlag):
     WHITE_QUEEN = WHITE | QUEEN
     BLACK_KING = BLACK | KING
     WHITE_KING = WHITE | KING
-    
-    # def __init__(self, color, position=None):
-    #     self.color = color
-    #     self.position = position
 
-    # def move(self, newPosition, board):
-    #     self.position = newPosition
+    def is_white(self):
+        return self & Piece.WHITE == Piece.WHITE
     
-    # def is_valid_move(self, newPosition):
-    #     return True
+    def is_black(self):
+        return self & Piece.BLACK == Piece.BLACK
     
-    # def is_obstructed(self, newPosition, board):
-    #     return False
+    def is_same_color(self, other):
+        if self == Piece.EMPTY or other == Piece.EMPTY:
+            return False
+        return self & Piece.WHITE == other & Piece.WHITE
+    
+    def is_opposite_color(self, other):
+        if self == Piece.EMPTY or other == Piece.EMPTY:
+            return False
+        return self & Piece.WHITE != other & Piece.WHITE
