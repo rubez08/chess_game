@@ -41,8 +41,9 @@ PIECE_IMAGES = {
 # Create the display window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Chessboard")
-game = Game('black')
+game = Game('white')
 valid_moves_list = []
+new_pick_up = False
 
 def draw_board():
     for rank_idx in range(8):
@@ -88,6 +89,7 @@ while running:
             piece = game.board[start_array_pos]
             is_correct_color = (game.turn == 'white' and piece.is_white()) or (game.turn == 'black' and piece.is_black())
             if is_correct_color:
+                new_pick_up = True
                 dragging_piece = piece
                 dragging_piece_pos = (x, y)
                 # Temporarily remove the piece from the board
@@ -99,12 +101,12 @@ while running:
                 new_file = x // SQ_SIZE
                 new_rank = y // SQ_SIZE
                 end_array_pos = rank_file_numeric_to_array_pos(new_rank, new_file)
-                if end_array_pos in valid_moves(piece, start_array_pos, game.board, game.color):
-                    move = Move(game.board, start_array_pos, end_array_pos, piece)
+                if end_array_pos in valid_moves(dragging_piece, start_array_pos, game.board, game.color, game):
+                    move = Move(game.board, start_array_pos, end_array_pos, dragging_piece, game.board[end_array_pos], game.get_last_move())
                     move.move()
                     game.add_move(move)
                 else: # If the move is invalid, put the piece back
-                    game.board[start_array_pos] = piece
+                    game.board[start_array_pos] = dragging_piece
                 dragging_piece = None
                 dragging_piece_pos = None
                 draw_board()
@@ -113,9 +115,13 @@ while running:
         elif event.type == pygame.MOUSEMOTION:
             if dragging_piece:                
                 x, y = event.pos
-                # screen.fill(WHITE)
-                # draw_board()
                 dragging_piece_pos = (x, y)
+        
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_z and len(game.move_history) > 0:
+                game.undo()
+                draw_board()
+                pygame.display.flip()
     
     # Change cursor depending on hover and action
     hover_x, hover_y = pygame.mouse.get_pos()
@@ -136,7 +142,9 @@ while running:
     # Draw the dragging piece if exists
     if dragging_piece:
         screen.blit(PIECE_IMAGES[dragging_piece], (dragging_piece_pos[0] - SQ_SIZE // 2, dragging_piece_pos[1] - SQ_SIZE // 2))
-        valid_moves_list = valid_moves(piece, start_array_pos, game.board, game.color)
+        if new_pick_up:
+            valid_moves_list = valid_moves(piece, start_array_pos, game.board, game.color, game)
+            new_pick_up = False
         ## Overlay a light pink color on the valid move squares
         for valid_move in valid_moves_list:
             rank, file = divmod(valid_move, 8)

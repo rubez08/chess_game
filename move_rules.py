@@ -2,18 +2,13 @@ from piece import Piece
 from translate_board_notations import array_pos_to_rank_file_numeric, rank_file_numeric_to_array_pos
 
 
-def valid_moves(piece, idx, board, game_color):
+def valid_moves(piece, idx, board, game_color, game):
     match piece:
-        case Piece.WHITE_PAWN:
-            if game_color == 'white':
-                return valid_up_board_pawn_moves(piece, idx, board)
-            else:
-                return valid_down_board_pawn_moves(piece, idx, board)
-        case Piece.BLACK_PAWN:
-            if game_color == 'white':
-                return valid_down_board_pawn_moves(piece, idx, board)
-            else:
-                return valid_up_board_pawn_moves(piece, idx, board)
+        case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
+            moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
+                       (game_color == 'black' and piece == Piece.BLACK_PAWN)
+            last_move = game.move_history[-1] if game.move_history else None
+            return valid_pawn_moves(piece, idx, board, moving_up, last_move)
         case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
             return valid_rook_moves(piece, idx, board)
         case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
@@ -22,186 +17,189 @@ def valid_moves(piece, idx, board, game_color):
             return valid_bishop_moves(piece, idx, board)
         case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
             return valid_queen_moves(piece, idx, board)
-        case Piece.WHITE_KING | Piece.BLACK_KING:
-            return valid_king_moves(piece, idx, board)
+        case Piece.WHITE_KING:
+            return valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
+        case Piece.BLACK_KING:
+            return valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
         case _:
             raise ValueError("Invalid piece")
     
-def valid_down_board_pawn_moves(piece, idx, board):
+def valid_pawn_moves(piece, idx, board, moving_up, last_move=None):
+    """Calculate valid pawn moves based on direction
+    Args:
+        piece: The pawn piece
+        idx: Current position
+        board: Game board
+        moving_up: True if pawn moves up the board, False if down
+        last_move: The last move made in the game (for en passant)
+    """
     valid_moves = []
-    for new_idx in range(64):
-        # Move forward one square
-        if new_idx - idx == 8:
-            if board[new_idx] == piece.EMPTY:
-                valid_moves.append(new_idx)
-        # If on start square, move forward two squares
-        if idx // 8 == 1:
-            if new_idx - idx == 16:
-                if board[new_idx] == Piece.EMPTY and board[new_idx - 8] == Piece.EMPTY:
-                    valid_moves.append(new_idx)
-        # Capture diagonally
-        if idx % 8 == 0:
-            if new_idx - idx == 9 and board[new_idx].is_black():
-                valid_moves.append(new_idx)
-        elif idx % 8 == 7:
-            if new_idx - idx == 7 and board[new_idx].is_black():
-                valid_moves.append(new_idx)
-        else:
-            if new_idx - idx == 9 and board[new_idx].is_black():
-                valid_moves.append(new_idx)
-            if new_idx - idx == 7 and board[new_idx].is_black():
-                valid_moves.append(new_idx)
-    return valid_moves
-
-def valid_up_board_pawn_moves(piece, idx, board):
-    valid_moves = []
-    for new_idx in range(64):
-        # Move forward one square
-        if idx - new_idx == 8:
-            if board[new_idx] == piece.EMPTY:
-                valid_moves.append(new_idx)
-        # If on start square, move forward two squares
-        if idx // 8 == 6:
-            if idx - new_idx == 16:
-                if board[new_idx] == Piece.EMPTY and board[new_idx + 8] == Piece.EMPTY:
-                    valid_moves.append(new_idx)
-        # Capture diagonally
-        if idx % 8 == 0:
-            if idx - new_idx == 7 and board[new_idx].is_white():
-                valid_moves.append(new_idx)
-        elif idx % 8 == 7:
-            if idx - new_idx == 9 and board[new_idx].is_white():
-                valid_moves.append(new_idx)
-        else:
-            if idx - new_idx == 9 and board[new_idx].is_white():
-                valid_moves.append(new_idx)
-            if idx - new_idx == 7 and board[new_idx].is_white():
-                valid_moves.append(new_idx)
+    direction = -8 if moving_up else 8
+    start_rank = 6 if moving_up else 1
+    current_rank = idx // 8
+    
+    # Forward moves
+    forward_idx = idx + direction
+    if 0 <= forward_idx < 64 and board[forward_idx] == Piece.EMPTY:
+        valid_moves.append(forward_idx)
+        
+        # Two square advance from starting position
+        if current_rank == start_rank:
+            double_forward_idx = idx + (direction * 2)
+            if board[double_forward_idx] == Piece.EMPTY:
+                valid_moves.append(double_forward_idx)
+    
+    # Regular captures
+    file = idx % 8
+    captures = []
+    if file > 0:  # Can capture left
+        captures.append(idx + direction - 1)
+    if file < 7:  # Can capture right
+        captures.append(idx + direction + 1)
+    
+    # Check capture squares for enemy pieces
+    for capture_idx in captures:
+        if 0 <= capture_idx < 64:
+            target = board[capture_idx]
+            if target != Piece.EMPTY and target.is_opposite_color(piece):
+                valid_moves.append(capture_idx)
+    
+    # En passant
+    if last_move and (last_move.piece_moved & Piece.PAWN):
+        last_start_rank = last_move.start // 8
+        last_end_rank = last_move.end // 8
+        last_file = last_move.end % 8
+        
+        # Check if last move was a two-square pawn advance
+        if abs(last_end_rank - last_start_rank) == 2:
+            # Check if our pawn is adjacent to the moved pawn
+            if current_rank == last_end_rank and abs(file - last_file) == 1:
+                # Add en passant capture square
+                en_passant_idx = last_move.end + direction
+                valid_moves.append(en_passant_idx)
+                
     return valid_moves
 
 def valid_rook_moves(piece, idx, board):
+    curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
+
     # Check horizontal moves
-    rank = idx // 8
-    idx_at_start_of_rank = rank * 8
-    idx_at_end_of_rank = idx_at_start_of_rank + 7
-    # Check left
-    if idx != idx_at_start_of_rank:
-        for new_idx in range(idx, idx_at_start_of_rank-1, -1):
-            if new_idx == idx:
-                continue
-            elif board[new_idx] == Piece.EMPTY:
-                valid_moves.append(new_idx)
-                continue
-            elif board[new_idx].is_opposite_color(piece):
-                valid_moves.append(new_idx)
-                break
-            elif board[new_idx].is_same_color(piece):
-                break
-    # Check right
-    if idx != idx_at_end_of_rank:
-        for new_idx in range(idx, idx_at_end_of_rank+1):
-            if new_idx == idx:
-                continue
-            elif board[new_idx] == Piece.EMPTY:
-                valid_moves.append(new_idx)
-                continue
-            elif board[new_idx].is_opposite_color(piece):
-                valid_moves.append(new_idx)
-                break
-            elif board[new_idx].is_same_color(piece):
-                break
+    horizontal_moves = []
+    for i in range(8):
+        if i == curr_file:
+            continue
+        horizontal_moves.append((curr_rank, i))
+    for square in horizontal_moves:
+        in_between_squares = [sq for sq in horizontal_moves if sq[1] > min(square[1], curr_file) and sq[1] < max(square[1], curr_file)]
+        if all([board[rank_file_numeric_to_array_pos(sq[0], sq[1])] == Piece.EMPTY for sq in in_between_squares]) and not board[rank_file_numeric_to_array_pos(curr_rank, square[1])].is_same_color(piece):
+            valid_moves.append(rank_file_numeric_to_array_pos(curr_rank, square[1]))
+    
     # Check vertical moves
-    file = idx % 8
-    idx_at_start_of_file = file
-    idx_at_end_of_file = 56 + file
-    # Check up
-    if idx != idx_at_start_of_file:
-        for new_idx in range(idx, idx_at_start_of_file-8, -8):
-            if new_idx == idx:
-                continue
-            elif board[new_idx] == Piece.EMPTY:
-                valid_moves.append(new_idx)
-                continue
-            elif board[new_idx].is_opposite_color(piece):
-                valid_moves.append(new_idx)
-                break
-            elif board[new_idx].is_same_color(piece):
-                break
-    # Check down
-    if idx != idx_at_end_of_file:
-        for new_idx in range(idx, idx_at_end_of_file+8, 8):
-            if new_idx == idx:
-                continue
-            elif board[new_idx] == Piece.EMPTY:
-                valid_moves.append(new_idx)
-                continue
-            elif board[new_idx].is_opposite_color(piece):
-                valid_moves.append(new_idx)
-                break
-            elif board[new_idx].is_same_color(piece):
-                break
+    vertical_moves = []
+    for i in range(8):
+        if i == curr_rank:
+            continue
+        vertical_moves.append((i, curr_file))
+    for square in vertical_moves:
+        in_between_squares = [sq for sq in vertical_moves if sq[0] > min(curr_rank, square[0]) and sq[0] < max(curr_rank, square[0])]
+        if all([board[rank_file_numeric_to_array_pos(sq[0], sq[1])] == Piece.EMPTY for sq in in_between_squares]) and not board[rank_file_numeric_to_array_pos(square[0], curr_file)].is_same_color(piece):
+            valid_moves.append(rank_file_numeric_to_array_pos(square[0], curr_file))
+    
     return valid_moves
 
 def valid_knight_moves(piece, idx, board):
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
-
-    for new_idx in range(64):
-        if board[new_idx].is_same_color(piece):
-            continue
-        new_rank, new_file = array_pos_to_rank_file_numeric(new_idx)
-        if (abs(new_rank - curr_rank) == 2 and abs(new_file - curr_file) == 1) or (abs(new_rank - curr_rank) == 1 and abs(new_file - curr_file) == 2):
-            valid_moves.append(new_idx)
+    for i in range(-2, 3):
+        for j in range(-2, 3):
+            if abs(i) + abs(j) == 3 and curr_rank + i >= 0 and curr_rank + i < 8 and curr_file + j >= 0 and curr_file + j < 8:
+                if not board[rank_file_numeric_to_array_pos(curr_rank + i, curr_file + j)].is_same_color(piece):
+                    valid_moves.append(rank_file_numeric_to_array_pos(curr_rank + i, curr_file + j))
+    
     return valid_moves
 
 def valid_bishop_moves(piece, idx, board):
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
 
-    increasing_diagonal = [] ## Diagonal defined by an increasing file and increasing rank
-    decreasing_diagonal = [] ## Diagonal defined by an increasing file and decreasing rank
-
-    for i in range(1, 8):
-        if curr_rank + i < 8 and curr_file + i < 8:
-            increasing_diagonal.append((curr_rank + i, curr_file + i))
-        if curr_rank - i >= 0 and curr_file + i < 8:
-            decreasing_diagonal.append((curr_rank - i, curr_file + i))
-        if curr_rank + i < 8 and curr_file - i >= 0:
-            decreasing_diagonal.append((curr_rank + i, curr_file - i))
-        if curr_rank - i >= 0 and curr_file - i >= 0:
-            increasing_diagonal.append((curr_rank - i, curr_file - i))
+    # Check all four diagonal directions
+    directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
     
-    for rank, file in increasing_diagonal:
-        in_between_squares = [sq for sq in increasing_diagonal if sq[0] > min(rank, curr_rank) and sq[0] < max(rank, curr_rank)]
-        if all([board[rank_file_numeric_to_array_pos(sq[0], sq[1])] == Piece.EMPTY for sq in in_between_squares]) and not board[rank_file_numeric_to_array_pos(rank,file)].is_same_color(piece):
-            valid_moves.append(rank_file_numeric_to_array_pos(rank, file))
-
-    for rank, file in decreasing_diagonal:
-        in_between_squares = [sq for sq in increasing_diagonal if sq[0] > min(rank, curr_rank) and sq[0] < max(rank, curr_rank)]
-        if all([board[rank_file_numeric_to_array_pos(sq[0], sq[1])] == Piece.EMPTY for sq in in_between_squares]) and not board[rank_file_numeric_to_array_pos(rank,file)].is_same_color(piece):
-            valid_moves.append(rank_file_numeric_to_array_pos(rank, file))
-
+    for rank_dir, file_dir in directions:
+        rank, file = curr_rank + rank_dir, curr_file + file_dir
+        while 0 <= rank < 8 and 0 <= file < 8:
+            target_idx = rank_file_numeric_to_array_pos(rank, file)
+            target_piece = board[target_idx]
+            
+            # If square is empty, add it and continue in this direction
+            if target_piece == Piece.EMPTY:
+                valid_moves.append(target_idx)
+            # If square has enemy piece, add it and stop this direction
+            elif not target_piece.is_same_color(piece):
+                valid_moves.append(target_idx)
+                break
+            # If square has friendly piece, stop this direction
+            else:
+                break
+                
+            rank += rank_dir
+            file += file_dir
     
     return valid_moves
 
 def valid_queen_moves(piece, idx, board):
-    curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
+    return valid_rook_moves(piece, idx, board) + valid_bishop_moves(piece, idx, board)
+
+def valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved):
+    """Check for valid castling moves for a king"""
     valid_moves = []
-    for new_idx in range(64):
-        new_rank, new_file = array_pos_to_rank_file_numeric(new_idx)
-        if new_idx // 8 == idx // 8:
-            valid_moves.append(new_idx)
-        elif new_idx % 8 == idx % 8:
-            valid_moves.append(new_idx)
-        if abs(new_rank - curr_rank) == abs(new_file - curr_file):
-            valid_moves.append(new_idx)
+    
+    # Only process if it's a king and hasn't moved
+    if not (piece & Piece.KING) or has_king_moved:
+        return valid_moves
+        
+    curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
+    
+    # Check kingside castle
+    if not has_rook_moved.get('kingside', True):
+        # Check if squares between king and rook are empty
+        if all(board[rank_file_numeric_to_array_pos(curr_rank, f)] == Piece.EMPTY 
+               for f in range(curr_file + 1, 7)):
+            valid_moves.append(rank_file_numeric_to_array_pos(curr_rank, curr_file + 2))
+    
+    # Check queenside castle
+    if not has_rook_moved.get('queenside', True):
+        # Check if squares between king and rook are empty
+        if all(board[rank_file_numeric_to_array_pos(curr_rank, f)] == Piece.EMPTY 
+               for f in range(1, curr_file)):
+            valid_moves.append(rank_file_numeric_to_array_pos(curr_rank, curr_file - 2))
+    
     return valid_moves
 
-def valid_king_moves(piece, idx, board):
+def valid_king_moves(piece, idx, board, has_king_moved=True, has_rook_moved=None):
+    """Get all valid moves for a king, including castling"""
+    curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
-    for new_idx in range(64):
-        if abs(new_idx - idx) == 1 or abs(new_idx - idx) == 7 or abs(new_idx - idx) == 8 or abs(new_idx - idx) == 9:
-            valid_moves.append(new_idx)
-    return valid_moves
+    
+    # Normal king moves
+    directions = [(1, 0), (-1, 0), (0, 1), (0, -1),
+                 (1, 1), (1, -1), (-1, 1), (-1, -1)]
+    
+    for rank_dir, file_dir in directions:
+        new_rank = curr_rank + rank_dir
+        new_file = curr_file + file_dir
+        
+        if 0 <= new_rank < 8 and 0 <= new_file < 8:
+            target_idx = rank_file_numeric_to_array_pos(new_rank, new_file)
+            target_piece = board[target_idx]
             
+            if target_piece == Piece.EMPTY or not target_piece.is_same_color(piece):
+                valid_moves.append(target_idx)
+    
+    # Add castling moves if applicable
+    if has_rook_moved is not None:  # Only check castling if rook movement history is provided
+        castling_moves = valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved)
+        valid_moves.extend(castling_moves)
+    
+    return valid_moves
