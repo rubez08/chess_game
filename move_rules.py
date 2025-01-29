@@ -1,30 +1,83 @@
 from piece import Piece
 from translate_board_notations import array_pos_to_rank_file_numeric, rank_file_numeric_to_array_pos
+from move import Move
 
-
-def valid_moves(piece, idx, board, game_color, game):
+def pseudo_valid_moves(piece, idx, board, game_color, game):
+    """Public function to get valid moves for any piece"""
     match piece:
         case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
             moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
                        (game_color == 'black' and piece == Piece.BLACK_PAWN)
-            last_move = game.move_history[-1] if game.move_history else None
-            return valid_pawn_moves(piece, idx, board, moving_up, last_move)
+            last_move = game.move_history[-1] if game and game.move_history else None
+            return __valid_pawn_moves(piece, idx, board, moving_up, last_move)
         case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
-            return valid_rook_moves(piece, idx, board)
+            return __valid_rook_moves(piece, idx, board)
         case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
-            return valid_knight_moves(piece, idx, board)
+            return __valid_knight_moves(piece, idx, board)
         case Piece.WHITE_BISHOP | Piece.BLACK_BISHOP:
-            return valid_bishop_moves(piece, idx, board)
+            return __valid_bishop_moves(piece, idx, board)
         case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
-            return valid_queen_moves(piece, idx, board)
+            return __valid_queen_moves(piece, idx, board)
         case Piece.WHITE_KING:
-            return valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
+            return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
         case Piece.BLACK_KING:
-            return valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
+            return __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
         case _:
             raise ValueError("Invalid piece")
+
+def valid_moves(piece, idx, board, game_color, game):
+    """Public function to get valid moves for any piece"""
+    match piece:
+        case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
+            moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
+                       (game_color == 'black' and piece == Piece.BLACK_PAWN)
+            last_move = game.move_history[-1] if game and game.move_history else None
+            return [move for move in __valid_pawn_moves(piece, idx, board, moving_up, last_move) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+        case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
+            return [move for move in __valid_rook_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+        case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
+            return [move for move in __valid_knight_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+        case Piece.WHITE_BISHOP | Piece.BLACK_BISHOP:
+            return [move for move in __valid_bishop_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+        case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
+            return [move for move in __valid_queen_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+        case Piece.WHITE_KING:
+            return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
+        case Piece.BLACK_KING:
+            return __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
+        case _:
+            raise ValueError("Invalid piece")
+
+def __is_square_under_attack(square_idx, attacking_color, game):
+    # Check if a square is under attack by any enemy piece
+    for idx, piece in enumerate(game.board):
+        if piece != Piece.EMPTY and piece.is_opposite_color(attacking_color):
+            # Get all possible moves for this piece
+            moves = pseudo_valid_moves(piece, idx, game.board, attacking_color, game)
+            if square_idx in moves:
+                return True
+    return False
+
+def is_king_in_check(color, game):
+    # Check if the King of the given color is in check
+    # Find King
+    king_piece = Piece.WHITE_KING if color == 'white' else Piece.BLACK_KING
+    king_idx = game.board.index(king_piece)
+
+    # Check if king's square is under attack by opposite color
+    return __is_square_under_attack(king_idx, Piece.WHITE if color =='white' else Piece.BLACK, game)
+
+def __would_move_cause_check(move, game): 
+    # Check if a move would put the movers king in check
+    temp_game = game.copy()
+    temp_board = move.board.copy()
+    temp_move = Move(temp_board, move.start, move.end, move.piece_moved, move.piece_captured, temp_game.get_last_move())
+    temp_move.move()
+    temp_game.add_move(temp_move)
+
+    return is_king_in_check('white' if move.piece_moved & Piece.WHITE else 'black', temp_game)
     
-def valid_pawn_moves(piece, idx, board, moving_up, last_move=None):
+def __valid_pawn_moves(piece, idx, board, moving_up, last_move=None):
     """Calculate valid pawn moves based on direction
     Args:
         piece: The pawn piece
@@ -80,7 +133,7 @@ def valid_pawn_moves(piece, idx, board, moving_up, last_move=None):
                 
     return valid_moves
 
-def valid_rook_moves(piece, idx, board):
+def __valid_rook_moves(piece, idx, board):
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
 
@@ -108,7 +161,7 @@ def valid_rook_moves(piece, idx, board):
     
     return valid_moves
 
-def valid_knight_moves(piece, idx, board):
+def __valid_knight_moves(piece, idx, board):
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
     for i in range(-2, 3):
@@ -119,7 +172,7 @@ def valid_knight_moves(piece, idx, board):
     
     return valid_moves
 
-def valid_bishop_moves(piece, idx, board):
+def __valid_bishop_moves(piece, idx, board):
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
 
@@ -148,8 +201,8 @@ def valid_bishop_moves(piece, idx, board):
     
     return valid_moves
 
-def valid_queen_moves(piece, idx, board):
-    return valid_rook_moves(piece, idx, board) + valid_bishop_moves(piece, idx, board)
+def __valid_queen_moves(piece, idx, board):
+    return __valid_rook_moves(piece, idx, board) + __valid_bishop_moves(piece, idx, board)
 
 def valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved):
     """Check for valid castling moves for a king"""
@@ -177,7 +230,7 @@ def valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved):
     
     return valid_moves
 
-def valid_king_moves(piece, idx, board, has_king_moved=True, has_rook_moved=None):
+def __valid_king_moves(piece, idx, board, has_king_moved=True, has_rook_moved=None):
     """Get all valid moves for a king, including castling"""
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []

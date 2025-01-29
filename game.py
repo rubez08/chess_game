@@ -1,5 +1,5 @@
 from translate_board_notations import fen_notation_to_board
-from move_rules import array_pos_to_rank_file_numeric
+from move_rules import is_king_in_check 
 from piece import Piece
 from move import Move
 
@@ -20,6 +20,12 @@ class Game:
             'kingside': False,
             'queenside': False
         }
+        self.is_white_in_check = False
+        self.is_black_in_check = False
+    
+    def update_check_status(self):
+        self.is_white_in_check = is_king_in_check('white', self)
+        self.is_black_in_check = is_king_in_check('black', self)
     
     def set_up_game_start(self, color='white'):
         fen = '8/8/8/8/8/8/8/8'
@@ -38,8 +44,10 @@ class Game:
     def add_move(self, move):
         last_move = self.move_history[-1] if self.move_history else None
         move = Move(self.board, move.start, move.end, move.piece_moved, last_move)
+        move.move()
         self.move_history.append(move)
         self.turn = 'white' if self.turn == 'black' else 'black'
+        self.update_check_status()
     
     def get_moves(self):
         return self.move_history
@@ -56,3 +64,16 @@ class Game:
     def get_last_move(self):
         if len(self.move_history) > 0:
             return self.move_history[-1]
+    
+    def copy(self):
+        copy_game = Game(self.color)
+        copy_game.board = self.board.copy()
+        copy_game.turn = self.turn
+        copy_game.move_history = self.move_history.copy()
+        copy_game.has_white_king_moved = self.has_white_king_moved
+        copy_game.has_white_rook_moved = self.has_white_rook_moved.copy()
+        copy_game.has_black_king_moved = self.has_black_king_moved
+        copy_game.has_black_rook_moved = self.has_black_rook_moved.copy()
+        copy_game.is_white_in_check = self.is_white_in_check
+        copy_game.is_black_in_check = self.is_black_in_check
+        return copy_game

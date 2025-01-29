@@ -13,6 +13,7 @@ class Move:
         self.check_en_passant(last_move)
     
     def check_en_passant(self, last_move):
+        # Check if last piece moved wasn't pawn or if there was no last move
         if not (self.piece_moved & Piece.PAWN) or not last_move:
             return
         last_move_start_rank, last_move_start_file = array_pos_to_rank_file_numeric(last_move.start)
