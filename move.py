@@ -2,12 +2,16 @@ from piece import Piece
 from move_rules import array_pos_to_rank_file_numeric, rank_file_numeric_to_array_pos
 
 class Move:
-    def __init__(self, board, start, end, piece_moved, piece_captured=None, last_move=None):
+    def __init__(self, board, start, end, piece_moved, piece_captured=None, last_move=None, is_castling=False):
         self.board = board
         self.start = start
         self.end = end
         self.piece_moved = piece_moved
         self.piece_captured = piece_captured
+        self.is_castling = is_castling
+        self.rook_start = None
+        self.rook_end = None
+        self.rook_piece = None
         self.is_en_passant = False
         self.captured_pawn_pos = None
         self.check_en_passant(last_move)
@@ -47,7 +51,7 @@ class Move:
                 # Move the king
                 self.board[self.end] = self.piece_moved
                 self.board[self.start] = Piece.EMPTY
-                
+
                 # Move the rook
                 if end_file > start_file:  # Kingside castle
                     rook_start = rank_file_numeric_to_array_pos(start_rank, 7)
@@ -55,9 +59,14 @@ class Move:
                 else:  # Queenside castle
                     rook_start = rank_file_numeric_to_array_pos(start_rank, 0)
                     rook_end = rank_file_numeric_to_array_pos(start_rank, 3)
-                
-                self.board[rook_end] = self.board[rook_start]
+
+                rook_piece = self.board[rook_start]
+                self.board[rook_end] = rook_piece
                 self.board[rook_start] = Piece.EMPTY
+                self.is_castling = True
+                self.rook_start = rook_start
+                self.rook_end = rook_end
+                self.rook_piece = rook_piece
             elif self.is_en_passant:
                 # Move the attacking pawn
                 self.board[self.end] = self.piece_moved

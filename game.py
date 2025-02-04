@@ -43,8 +43,6 @@ class Game:
     
     def add_move(self, move):
         last_move = self.move_history[-1] if self.move_history else None
-        move = Move(self.board, move.start, move.end, move.piece_moved, last_move)
-        move.move()
         self.move_history.append(move)
         self.turn = 'white' if self.turn == 'black' else 'black'
         self.update_check_status()
@@ -55,9 +53,16 @@ class Game:
     def undo(self):
         if len(self.move_history) > 0:
             previous_move = self.move_history[-1]
-            print(f"Previous capture: {previous_move.piece_captured}")
             self.board[previous_move.start] = previous_move.piece_moved
-            self.board[previous_move.end] = previous_move.piece_captured
+            if previous_move.is_castling:
+                self.board[previous_move.rook_start] = previous_move.rook_piece
+                self.board[previous_move.rook_end] = Piece.EMPTY
+                self.board[previous_move.end] = Piece.EMPTY
+            elif previous_move.is_en_passant:
+                self.board[previous_move.captured_pawn_pos] = previous_move.piece_captured
+                self.board[previous_move.end] = Piece.EMPTY
+            else:
+                self.board[previous_move.end] = previous_move.piece_captured
             self.move_history.pop()
             self.turn = 'white' if self.turn == 'black' else 'black'
     
