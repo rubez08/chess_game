@@ -25,22 +25,22 @@ def pseudo_valid_moves(piece, idx, board, game_color, game):
         case _:
             raise ValueError("Invalid piece")
 
-def valid_moves(piece, idx, board, game_color, game):
+def valid_moves(piece, idx, board, game_color, game_turn, game):
     """Public function to get valid moves for any piece"""
     match piece:
         case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
             moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
                        (game_color == 'black' and piece == Piece.BLACK_PAWN)
             last_move = game.move_history[-1] if game and game.move_history else None
-            return [move for move in __valid_pawn_moves(piece, idx, board, moving_up, last_move) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+            return [end_idx for end_idx in __valid_pawn_moves(piece, idx, board, moving_up, last_move) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
         case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
-            return [move for move in __valid_rook_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+            return [end_idx for end_idx in __valid_rook_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
         case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
-            return [move for move in __valid_knight_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+            return [end_idx for end_idx in __valid_knight_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
         case Piece.WHITE_BISHOP | Piece.BLACK_BISHOP:
-            return [move for move in __valid_bishop_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+            return [end_idx for end_idx in __valid_bishop_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
         case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
-            return [move for move in __valid_queen_moves(piece, idx, board) if not __would_move_cause_check(Move(board, idx, move, piece, board[move]), game)]
+            return [end_idx for end_idx in __valid_queen_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
         case Piece.WHITE_KING:
             return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
         case Piece.BLACK_KING:
@@ -48,34 +48,60 @@ def valid_moves(piece, idx, board, game_color, game):
         case _:
             raise ValueError("Invalid piece")
 
-def __is_square_under_attack(square_idx, attacking_color, game):
+def __is_square_under_attack(square_idx, attacking_color, board, game):
     # Check if a square is under attack by any enemy piece
-    for idx, piece in enumerate(game.board):
+    for idx, piece in enumerate(board):
         if piece != Piece.EMPTY and piece.is_opposite_color(attacking_color):
             # Get all possible moves for this piece
-            moves = pseudo_valid_moves(piece, idx, game.board, attacking_color, game)
+            moves = pseudo_valid_moves(piece, idx, game.board, "white" if attacking_color == "black" else "black", game)
             if square_idx in moves:
                 return True
     return False
 
-def is_king_in_check(color, game):
+def is_king_in_check(color, board, game):
     # Check if the King of the given color is in check
     # Find King
     king_piece = Piece.WHITE_KING if color == 'white' else Piece.BLACK_KING
-    king_idx = game.board.index(king_piece)
+    king_idx = board.index(king_piece)
+    print(f"Checking if {color} king is in check")
 
     # Check if king's square is under attack by opposite color
-    return __is_square_under_attack(king_idx, Piece.WHITE if color =='white' else Piece.BLACK, game)
+    return __is_square_under_attack(king_idx, Piece.WHITE if color =='white' else Piece.BLACK, board, game)
 
-def __would_move_cause_check(move, game): 
-    # Check if a move would put the movers king in check
+def __would_move_cause_check(piece, start_idx, end_idx, board, color, game):
+    """Test if a move would put or leave own king in check"""
+    # Make a copy of the game
     temp_game = game.copy()
-    temp_board = move.board.copy()
-    temp_move = Move(temp_board, move.start, move.end, move.piece_moved, move.piece_captured, temp_game.get_last_move())
-    temp_move.move()
-    temp_game.add_move(temp_move)
-
-    return is_king_in_check('white' if move.piece_moved & Piece.WHITE else 'black', temp_game)
+    # # Make a copy of the board
+    # temp_board = board.copy()
+    move = Move(temp_game.board, start_idx, end_idx, piece, temp_game.board[end_idx], game.get_last_move())
+    move.move()
+    temp_game.add_move(move)
+    
+    # # Handle special moves
+    # if (piece & Piece.KING) and abs(end_idx % 8 - start_idx % 8) == 2:
+    #     # Castling move
+    #     rank = start_idx // 8
+    #     if end_idx > start_idx:  # Kingside
+    #         rook_start = rank * 8 + 7
+    #         rook_end = rank * 8 + 5
+    #     else:  # Queenside
+    #         rook_start = rank * 8
+    #         rook_end = rank * 8 + 3
+    #     temp_board[rook_end] = temp_board[rook_start]
+    #     temp_board[rook_start] = Piece.EMPTY
+    
+    # # Make the move on temp board
+    # temp_board[end_idx] = piece
+    # temp_board[start_idx] = Piece.EMPTY
+    
+    # # Handle en passant capture
+    # if (piece & Piece.PAWN) and abs(end_idx - start_idx) in [7, 9] and temp_board[end_idx] == Piece.EMPTY:
+    #     # If pawn is moving diagonally to an empty square, it must be en passant
+    #     captured_pawn_idx = end_idx + (8 if piece & Piece.WHITE else -8)
+    #     temp_board[captured_pawn_idx] = Piece.EMPTY
+    
+    return is_king_in_check(color, temp_game.board, temp_game)
     
 def __valid_pawn_moves(piece, idx, board, moving_up, last_move=None):
     """Calculate valid pawn moves based on direction

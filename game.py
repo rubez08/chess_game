@@ -24,8 +24,10 @@ class Game:
         self.is_black_in_check = False
     
     def update_check_status(self):
-        self.is_white_in_check = is_king_in_check('white', self)
-        self.is_black_in_check = is_king_in_check('black', self)
+        self.is_white_in_check = is_king_in_check('white', self.board, self)
+        print(f"White in check: {self.is_white_in_check}")
+        self.is_black_in_check = is_king_in_check('black', self.board, self)
+        print(f"Black in check: {self.is_black_in_check}")
     
     def set_up_game_start(self, color='white'):
         fen = '8/8/8/8/8/8/8/8'
@@ -45,7 +47,7 @@ class Game:
         last_move = self.move_history[-1] if self.move_history else None
         self.move_history.append(move)
         self.turn = 'white' if self.turn == 'black' else 'black'
-        self.update_check_status()
+        # self.update_check_status()
     
     def get_moves(self):
         return self.move_history

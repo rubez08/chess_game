@@ -101,7 +101,7 @@ while running:
                 new_file = x // SQ_SIZE
                 new_rank = y // SQ_SIZE
                 end_array_pos = rank_file_numeric_to_array_pos(new_rank, new_file)
-                if end_array_pos in valid_moves(dragging_piece, start_array_pos, game.board, game.color, game):
+                if end_array_pos in valid_moves(dragging_piece, start_array_pos, game.board, game.color, game.turn, game):
                     move = Move(game.board, start_array_pos, end_array_pos, dragging_piece, game.board[end_array_pos], game.get_last_move())
                     move.move()
                     game.add_move(move)
@@ -143,7 +143,7 @@ while running:
     if dragging_piece:
         screen.blit(PIECE_IMAGES[dragging_piece], (dragging_piece_pos[0] - SQ_SIZE // 2, dragging_piece_pos[1] - SQ_SIZE // 2))
         if new_pick_up:
-            valid_moves_list = valid_moves(piece, start_array_pos, game.board, game.color, game)
+            valid_moves_list = valid_moves(piece, start_array_pos, game.board, game.color, game.turn, game)
             new_pick_up = False
         ## Overlay a light pink color on the valid move squares
         for valid_move in valid_moves_list:
