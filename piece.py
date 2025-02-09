@@ -7,6 +7,7 @@ class Piece(IntFlag):
     BISHOP = 4
     QUEEN = 5
     KING = 6
+    STRIP_COLOR = 7
     WHITE = 8
     BLACK = 16
 
@@ -38,3 +39,23 @@ class Piece(IntFlag):
         if self == Piece.EMPTY or other == Piece.EMPTY:
             return False
         return self & Piece.WHITE != other & Piece.WHITE
+    
+    def is_king(self):
+        return self & Piece.STRIP_COLOR == Piece.KING
+    
+    def is_rook(self):
+        return self & Piece.STRIP_COLOR == Piece.ROOK
+    
+    def is_queen(self):
+        return self & Piece.STRIP_COLOR == Piece.QUEEN
+    
+    def is_bishop(self):
+        return self & Piece.STRIP_COLOR == Piece.BISHOP
+    
+    def is_knight(self):
+        return self & Piece.STRIP_COLOR == Piece.KNIGHT
+    
+    def is_pawn(self):
+        return self & Piece.STRIP_COLOR == Piece.PAWN
+    
+    

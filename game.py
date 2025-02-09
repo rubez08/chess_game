@@ -2,6 +2,7 @@ from translate_board_notations import fen_notation_to_board
 from move_rules import is_king_in_check 
 from piece import Piece
 from move import Move
+from move_rules import valid_moves
 
 class Game:
     def __init__(self, color='white'):
@@ -22,12 +23,23 @@ class Game:
         }
         self.is_white_in_check = False
         self.is_black_in_check = False
-    
+        self.white_king_idx = 60
+        self.black_king_idx = 4
+
     def update_check_status(self):
         self.is_white_in_check = is_king_in_check('white', self.board, self)
-        print(f"White in check: {self.is_white_in_check}")
         self.is_black_in_check = is_king_in_check('black', self.board, self)
-        print(f"Black in check: {self.is_black_in_check}")
+    
+    def is_checkmate(self):
+        all_valid_moves = []
+        for idx, piece in enumerate(self.board):
+            if (self.turn == 'white' and piece.is_white()) or (self.turn == 'black' and piece.is_black()):
+                print(f"Checking valid moves for {piece} at {idx}")
+                all_valid_moves.extend(valid_moves(piece, idx, self.board, self.color, self.turn, self))
+        print(f"All valid moves: {all_valid_moves}")
+        if len(all_valid_moves) == 0:
+            return True
+        return False
     
     def set_up_game_start(self, color='white'):
         fen = '8/8/8/8/8/8/8/8'
@@ -44,10 +56,13 @@ class Game:
             print()
     
     def add_move(self, move):
-        last_move = self.move_history[-1] if self.move_history else None
         self.move_history.append(move)
         self.turn = 'white' if self.turn == 'black' else 'black'
-        # self.update_check_status()
+        if move.piece_moved.is_king():
+            if move.piece_moved.is_white():
+                self.white_king_idx = move.end
+            else:
+                self.black_king_idx = move.end
     
     def get_moves(self):
         return self.move_history

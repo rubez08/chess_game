@@ -3,50 +3,49 @@ from translate_board_notations import array_pos_to_rank_file_numeric, rank_file_
 from move import Move
 
 def pseudo_valid_moves(piece, idx, board, game_color, game):
-    """Public function to get valid moves for any piece"""
-    match piece:
-        case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
-            moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
-                       (game_color == 'black' and piece == Piece.BLACK_PAWN)
-            last_move = game.move_history[-1] if game and game.move_history else None
-            return __valid_pawn_moves(piece, idx, board, moving_up, last_move)
-        case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
-            return __valid_rook_moves(piece, idx, board)
-        case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
-            return __valid_knight_moves(piece, idx, board)
-        case Piece.WHITE_BISHOP | Piece.BLACK_BISHOP:
-            return __valid_bishop_moves(piece, idx, board)
-        case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
-            return __valid_queen_moves(piece, idx, board)
-        case Piece.WHITE_KING:
-            return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
-        case Piece.BLACK_KING:
-            return __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
-        case _:
-            raise ValueError("Invalid piece")
+    """Private function to get psuedo-valid moves for any piece"""
+
+    if piece.is_pawn():
+        moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
+                    (game_color == 'black' and piece == Piece.BLACK_PAWN)
+        last_move = game.move_history[-1] if game and game.move_history else None
+        return __valid_pawn_moves(piece, idx, board, moving_up, last_move)
+    elif piece.is_rook():
+        return __valid_rook_moves(piece, idx, board)
+    elif piece.is_knight():
+        return __valid_knight_moves(piece, idx, board)
+    elif piece.is_bishop():
+        return __valid_bishop_moves(piece, idx, board)
+    elif piece.is_queen():
+        return __valid_queen_moves(piece, idx, board)
+    elif piece == Piece.WHITE_KING:
+        return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
+    elif piece == Piece.BLACK_KING:
+        return __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
+    else:
+        raise ValueError("Invalid piece")
 
 def valid_moves(piece, idx, board, game_color, game_turn, game):
     """Public function to get valid moves for any piece"""
-    match piece:
-        case Piece.WHITE_PAWN | Piece.BLACK_PAWN:
-            moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
-                       (game_color == 'black' and piece == Piece.BLACK_PAWN)
-            last_move = game.move_history[-1] if game and game.move_history else None
-            return [end_idx for end_idx in __valid_pawn_moves(piece, idx, board, moving_up, last_move) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
-        case Piece.WHITE_ROOK | Piece.BLACK_ROOK:
-            return [end_idx for end_idx in __valid_rook_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
-        case Piece.WHITE_KNIGHT | Piece.BLACK_KNIGHT:
-            return [end_idx for end_idx in __valid_knight_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
-        case Piece.WHITE_BISHOP | Piece.BLACK_BISHOP:
-            return [end_idx for end_idx in __valid_bishop_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
-        case Piece.WHITE_QUEEN | Piece.BLACK_QUEEN:
-            return [end_idx for end_idx in __valid_queen_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, board, game_turn, game)]
-        case Piece.WHITE_KING:
-            return __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved)
-        case Piece.BLACK_KING:
-            return __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved)
-        case _:
-            raise ValueError("Invalid piece")
+    if piece.is_pawn():
+        moving_up = (game_color == 'white' and piece == Piece.WHITE_PAWN) or \
+                    (game_color == 'black' and piece == Piece.BLACK_PAWN)
+        last_move = game.move_history[-1] if game and game.move_history else None
+        return [end_idx for end_idx in __valid_pawn_moves(piece, idx, board, moving_up, last_move) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece.is_rook():
+        return [end_idx for end_idx in __valid_rook_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece.is_knight():
+        return [end_idx for end_idx in __valid_knight_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece.is_bishop():
+        return [end_idx for end_idx in __valid_bishop_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece.is_queen():
+        return [end_idx for end_idx in __valid_queen_moves(piece, idx, board) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece == Piece.WHITE_KING:
+        return [end_idx for end_idx in __valid_king_moves(piece, idx, board, game.has_white_king_moved, game.has_white_rook_moved) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    elif piece == Piece.BLACK_KING:
+        return [end_idx for end_idx in __valid_king_moves(piece, idx, board, game.has_black_king_moved, game.has_black_rook_moved) if not __would_move_cause_check(piece, idx, end_idx, game_turn, game)]
+    else:
+        raise ValueError("Invalid piece")
 
 def __is_square_under_attack(square_idx, attacking_color, board, game):
     # Check if a square is under attack by any enemy piece
@@ -61,45 +60,22 @@ def __is_square_under_attack(square_idx, attacking_color, board, game):
 def is_king_in_check(color, board, game):
     # Check if the King of the given color is in check
     # Find King
-    king_piece = Piece.WHITE_KING if color == 'white' else Piece.BLACK_KING
-    king_idx = board.index(king_piece)
-    print(f"Checking if {color} king is in check")
+    king_idx = game.white_king_idx if color == 'white' else game.black_king_idx
 
     # Check if king's square is under attack by opposite color
     return __is_square_under_attack(king_idx, Piece.WHITE if color =='white' else Piece.BLACK, board, game)
 
-def __would_move_cause_check(piece, start_idx, end_idx, board, color, game):
+def __would_move_cause_check(piece, start_idx, end_idx, color, game):
     """Test if a move would put or leave own king in check"""
+        # Add bounds checking
+    if not (0 <= start_idx < 64 and 0 <= end_idx < 64):
+        raise ValueError("Invalid move")  # Invalid move if out of bounds
     # Make a copy of the game
     temp_game = game.copy()
-    # # Make a copy of the board
-    # temp_board = board.copy()
+    # Make potential move in game copy
     move = Move(temp_game.board, start_idx, end_idx, piece, temp_game.board[end_idx], game.get_last_move())
     move.move()
     temp_game.add_move(move)
-    
-    # # Handle special moves
-    # if (piece & Piece.KING) and abs(end_idx % 8 - start_idx % 8) == 2:
-    #     # Castling move
-    #     rank = start_idx // 8
-    #     if end_idx > start_idx:  # Kingside
-    #         rook_start = rank * 8 + 7
-    #         rook_end = rank * 8 + 5
-    #     else:  # Queenside
-    #         rook_start = rank * 8
-    #         rook_end = rank * 8 + 3
-    #     temp_board[rook_end] = temp_board[rook_start]
-    #     temp_board[rook_start] = Piece.EMPTY
-    
-    # # Make the move on temp board
-    # temp_board[end_idx] = piece
-    # temp_board[start_idx] = Piece.EMPTY
-    
-    # # Handle en passant capture
-    # if (piece & Piece.PAWN) and abs(end_idx - start_idx) in [7, 9] and temp_board[end_idx] == Piece.EMPTY:
-    #     # If pawn is moving diagonally to an empty square, it must be en passant
-    #     captured_pawn_idx = end_idx + (8 if piece & Piece.WHITE else -8)
-    #     temp_board[captured_pawn_idx] = Piece.EMPTY
     
     return is_king_in_check(color, temp_game.board, temp_game)
     
@@ -256,7 +232,7 @@ def valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved):
     
     return valid_moves
 
-def __valid_king_moves(piece, idx, board, has_king_moved=True, has_rook_moved=None):
+def __valid_king_moves(piece, idx, board, has_king_moved, has_rook_moved):
     """Get all valid moves for a king, including castling"""
     curr_rank, curr_file = array_pos_to_rank_file_numeric(idx)
     valid_moves = []
@@ -280,5 +256,5 @@ def __valid_king_moves(piece, idx, board, has_king_moved=True, has_rook_moved=No
     if has_rook_moved is not None:  # Only check castling if rook movement history is provided
         castling_moves = valid_castling_moves(piece, idx, board, has_king_moved, has_rook_moved)
         valid_moves.extend(castling_moves)
-    
+            
     return valid_moves

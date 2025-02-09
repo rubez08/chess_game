@@ -105,6 +105,13 @@ while running:
                     move = Move(game.board, start_array_pos, end_array_pos, dragging_piece, game.board[end_array_pos], game.get_last_move())
                     move.move()
                     game.add_move(move)
+                    game.update_check_status()
+                    if game.is_white_in_check or game.is_black_in_check:
+                        if game.is_checkmate():
+                            print(f"{game.turn} is in checkmate!")
+                        else:
+                            print(f"{game.turn} is in check!")
+
                 else: # If the move is invalid, put the piece back
                     game.board[start_array_pos] = dragging_piece
                 dragging_piece = None
